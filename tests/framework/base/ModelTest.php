@@ -122,7 +122,6 @@ class ModelTest extends TestCase
         $speaker = new Speaker();
         $speaker->setScenario('test');
         $this->assertTrue($speaker->isAttributeSafe('firstName'));
-
     }
 
     public function testSafeScenarios()

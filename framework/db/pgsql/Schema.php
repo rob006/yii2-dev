@@ -271,7 +271,6 @@ SQL;
      */
     protected function findConstraints($table)
     {
-
         $tableName = $this->quoteValue($table->name);
         $tableSchema = $this->quoteValue($table->schemaName);
 
@@ -466,7 +465,7 @@ SQL;
                 if ($column->type === 'timestamp' && $column->defaultValue === 'now()') {
                     $column->defaultValue = new Expression($column->defaultValue);
                 } elseif ($column->type === 'boolean') {
-                        $column->defaultValue = ($column->defaultValue === 'true');
+                    $column->defaultValue = ($column->defaultValue === 'true');
                 } elseif (stripos($column->dbType, 'bit') === 0 || stripos($column->dbType, 'varbit') === 0) {
                     $column->defaultValue = bindec(trim($column->defaultValue, 'B\''));
                 } elseif (preg_match("/^'(.*?)'::/", $column->defaultValue, $matches)) {

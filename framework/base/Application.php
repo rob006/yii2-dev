@@ -371,7 +371,6 @@ abstract class Application extends Module
     public function run()
     {
         try {
-
             $this->state = self::STATE_BEFORE_REQUEST;
             $this->trigger(self::EVENT_BEFORE_REQUEST);
 
@@ -387,12 +386,9 @@ abstract class Application extends Module
             $this->state = self::STATE_END;
 
             return $response->exitStatus;
-
         } catch (ExitException $e) {
-
             $this->end($e->statusCode, isset($response) ? $response : null);
             return $e->statusCode;
-
         }
     }
 

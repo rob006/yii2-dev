@@ -566,7 +566,7 @@ class Module extends ServiceLocator
         }
 
         if (strpos($route, '/') !== false) {
-            list ($id, $route) = explode('/', $route, 2);
+            list($id, $route) = explode('/', $route, 2);
         } else {
             $id = $route;
             $route = '';

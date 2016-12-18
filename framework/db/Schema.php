@@ -512,7 +512,6 @@ abstract class Schema extends Object
         }
 
         return implode('.', $parts);
-
     }
 
     /**

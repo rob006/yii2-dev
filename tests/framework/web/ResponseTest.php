@@ -42,7 +42,7 @@ class ResponseTest extends \yiiunit\TestCase
         $fullContent = file_get_contents($dataFile);
         $_SERVER['HTTP_RANGE'] = 'bytes=' . $rangeHeader;
         ob_start();
-        $this->response->sendFile($dataFile)->send(	);
+        $this->response->sendFile($dataFile)->send();
         $content = ob_get_clean();
 
         $this->assertEquals($expectedContent, $content);
@@ -59,10 +59,10 @@ class ResponseTest extends \yiiunit\TestCase
         // TODO test more cases for range requests and check for rfc compatibility
         // http://www.w3.org/Protocols/rfc2616/rfc2616.txt
         return [
-            ['1-2,3-5,6-10'],	// multiple range request not supported
-            ['5-1'],			// last-byte-pos value is less than its first-byte-pos value
-            ['-100000'],		// last-byte-pos bigger then content length
-            ['10000-'],			// first-byte-pos bigger then content length
+            ['1-2,3-5,6-10'],    // multiple range request not supported
+            ['5-1'],            // last-byte-pos value is less than its first-byte-pos value
+            ['-100000'],        // last-byte-pos bigger then content length
+            ['10000-'],            // first-byte-pos bigger then content length
         ];
     }
 

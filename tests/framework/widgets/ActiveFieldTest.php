@@ -77,7 +77,7 @@ EOD;
     {
         // field will be the html of the model's attribute wrapped with the return string below.
         $field = $this->attributeName;
-        $content = function($field) {
+        $content = function ($field) {
             return "<div class=\"custom-container\"> $field </div>";
         };
 
@@ -147,7 +147,8 @@ EOD;
         $this->assertEquals($expectedValue, $actualValue);
     }
 
-    public function testBegin() {
+    public function testBegin()
+    {
         $expectedValue = '<article class="form-group field-activefieldtestmodel-attributename">';
         $this->activeField->options['tag'] = 'article';
         $actualValue = $this->activeField->begin();
@@ -354,7 +355,6 @@ EOD;
         // expected empty
         $actualValue = $this->activeField->getClientOptions();
         $this->assertTrue(empty($actualValue) === true);
-
     }
 
     public function testGetClientOptionsClientValidation()
@@ -394,7 +394,7 @@ EOD;
         $this->activeField->enableAjaxValidation = true;
         $this->activeField->model->addRule($this->attributeName, 'yiiunit\framework\widgets\TestValidator');
 
-        foreach($this->activeField->model->validators as $validator) {
+        foreach ($this->activeField->model->validators as $validator) {
             $validator->whenClient = "function (attribute, value) { return 'yii2' == 'yii2'; }"; // js
         }
 
@@ -518,7 +518,6 @@ EOD;
 
         return $view;
     }
-
 }
 
 class ActiveFieldTestModel extends DynamicModel
@@ -560,7 +559,6 @@ class ActiveFieldExtend extends ActiveField
 
 class TestValidator extends \yii\validators\Validator
 {
-
     public function clientValidateAttribute($object, $attribute, $view)
     {
         return "return true;";

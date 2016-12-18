@@ -95,7 +95,6 @@ class UserTest extends TestCase
         $this->mockWebApplication($appConfig);
         $this->assertTrue(Yii::$app->user->isGuest);
         $this->assertFalse(Yii::$app->user->can('doSomething'));
-
     }
     
     public function testCookieCleanup()
@@ -128,12 +127,12 @@ class UserTest extends TestCase
         Yii::$app->user->getIdentity();
         $this->assertTrue(strlen($cookiesMock->getValue(Yii::$app->user->identityCookie['name'])) == 0);
 
-        Yii::$app->user->login(UserIdentity::findIdentity('user1'),3600);
+        Yii::$app->user->login(UserIdentity::findIdentity('user1'), 3600);
         $this->assertFalse(Yii::$app->user->isGuest);
         $this->assertSame(Yii::$app->user->id, 'user1');
         $this->assertFalse(strlen($cookiesMock->getValue(Yii::$app->user->identityCookie['name'])) == 0);
 
-        Yii::$app->user->login(UserIdentity::findIdentity('user2'),0);
+        Yii::$app->user->login(UserIdentity::findIdentity('user2'), 0);
         $this->assertFalse(Yii::$app->user->isGuest);
         $this->assertSame(Yii::$app->user->id, 'user2');
         $this->assertTrue(strlen($cookiesMock->getValue(Yii::$app->user->identityCookie['name'])) == 0);
@@ -151,8 +150,8 @@ class UserTest extends TestCase
         }
 
         $_SERVER = $server;
-        Yii::$app->set('response',['class' => 'yii\web\Response']);
-        Yii::$app->set('request',[
+        Yii::$app->set('response', ['class' => 'yii\web\Response']);
+        Yii::$app->set('request', [
             'class' => 'yii\web\Request',
             'scriptFile' => __DIR__ .'/index.php',
             'scriptUrl' => '/index.php',
@@ -226,7 +225,8 @@ class UserTest extends TestCase
         $_SERVER['HTTP_ACCEPT'] = 'text/json, */*; q=0.1';
         try {
             $user->loginRequired();
-        } catch (ForbiddenHttpException $e) {}
+        } catch (ForbiddenHttpException $e) {
+        }
         $this->assertFalse(Yii::$app->response->getIsRedirection());
 
         $this->reset();
@@ -263,7 +263,8 @@ class UserTest extends TestCase
         $_SERVER['HTTP_ACCEPT'] = 'text/json;q=0.1';
         try {
             $user->loginRequired();
-        } catch (ForbiddenHttpException $e) {}
+        } catch (ForbiddenHttpException $e) {
+        }
         $this->assertNotEquals('json-only', $user->getReturnUrl());
 
         $this->reset();
@@ -294,7 +295,6 @@ class UserTest extends TestCase
         $this->setExpectedException('yii\\web\\ForbiddenHttpException');
         Yii::$app->user->loginRequired();
     }
-
 }
 
 class UserIdentity extends Component implements IdentityInterface
@@ -346,7 +346,7 @@ class MockRequest extends \yii\web\Request
         global $cookiesMock;
 
         return $cookiesMock;
-   }
+    }
 }
 
 class MockResponse extends \yii\web\Response

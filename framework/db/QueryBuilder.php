@@ -586,7 +586,6 @@ class QueryBuilder extends \yii\base\Object
      */
     public function addCommentOnColumn($table, $column, $comment)
     {
-
         return 'COMMENT ON COLUMN ' . $this->db->quoteTableName($table) . '.' . $this->db->quoteColumnName($column) . ' IS ' . $this->db->quoteValue($comment);
     }
 
@@ -767,7 +766,7 @@ class QueryBuilder extends \yii\base\Object
                 throw new Exception('A join clause must be specified as an array of join type, join table, and optionally join condition.');
             }
             // 0:join type, 1:join table, 2:on-condition (optional)
-            list ($joinType, $table) = $join;
+            list($joinType, $table) = $join;
             $tables = $this->quoteTableNames((array) $table, $params);
             $table = reset($tables);
             $joins[$i] = "$joinType $table";

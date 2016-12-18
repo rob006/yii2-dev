@@ -196,5 +196,7 @@ class NewObject extends Object
         return $this->_items;
     }
 
-    public function setWriteOnly() {}
+    public function setWriteOnly()
+    {
+    }
 }

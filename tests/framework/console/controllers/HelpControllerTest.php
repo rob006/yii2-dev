@@ -153,8 +153,6 @@ STRING
         $this->assertContains('--port, -p: int (defaults to 8080)', $result);
         $this->assertContains('--router, -r: string', $result);
     }
-
-
 }
 
 

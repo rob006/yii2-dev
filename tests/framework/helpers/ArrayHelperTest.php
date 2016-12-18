@@ -472,7 +472,8 @@ class ArrayHelperTest extends TestCase
         ], $result);
     }
 
-    public function testIndexGroupBy() {
+    public function testIndexGroupBy()
+    {
         $array = [
             ['id' => '123', 'data' => 'abc'],
             ['id' => '345', 'data' => 'def'],
@@ -838,7 +839,6 @@ class ArrayHelperTest extends TestCase
         $this->assertTrue(ArrayHelper::isIn(['a'], new \ArrayObject([['a'], 'b'])));
         $this->assertFalse(ArrayHelper::isIn('a', new \ArrayObject([['a'], 'b'])));
         $this->assertFalse(ArrayHelper::isIn('a', [['a'], 'b']));
-
     }
 
     public function testIsInStrict()
