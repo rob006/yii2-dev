@@ -143,6 +143,4 @@ class DataColumnTest extends \yiiunit\TestCase
 HTML
             , $result);
     }
-
-
 }

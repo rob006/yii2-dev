@@ -28,5 +28,4 @@ class SchemaTest extends \yiiunit\framework\db\SchemaTest
         $columns['bool_col2']['defaultValue'] = true;
         return $columns;
     }
-
 }

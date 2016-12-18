@@ -89,5 +89,5 @@ if (method_exists($this, 'beginPage')) {
 </html>
 <?php
 if (method_exists($this, 'endPage')) {
-    $this->endPage();
-}
+        $this->endPage();
+    }

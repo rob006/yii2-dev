@@ -106,7 +106,7 @@ class ActiveRecordTest extends \yiiunit\framework\db\ActiveRecordTest
         $this->assertEquals(1, BoolAR::find()->where('bool_col = :bool_col', ['bool_col' => true])->count('*', $db));
         $this->assertEquals(1, BoolAR::find()->where('bool_col = :bool_col', ['bool_col' => false])->count('*', $db));
 
-        $this->assertSame(true,  BoolAR::find()->where(['bool_col' => true])->one($db)->bool_col);
+        $this->assertSame(true, BoolAR::find()->where(['bool_col' => true])->one($db)->bool_col);
         $this->assertSame(false, BoolAR::find()->where(['bool_col' => false])->one($db)->bool_col);
     }
 

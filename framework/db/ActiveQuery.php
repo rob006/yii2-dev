@@ -316,7 +316,7 @@ class ActiveQuery extends Query implements ActiveQueryInterface
         }
 
         if ($this->sql === null) {
-            list ($sql, $params) = $db->getQueryBuilder()->build($this);
+            list($sql, $params) = $db->getQueryBuilder()->build($this);
         } else {
             $sql = $this->sql;
             $params = $this->params;
@@ -436,7 +436,7 @@ class ActiveQuery extends Query implements ActiveQueryInterface
 
         $model = new $this->modelClass;
         foreach ($this->joinWith as $config) {
-            list ($with, $eagerLoading, $joinType) = $config;
+            list($with, $eagerLoading, $joinType) = $config;
             $this->joinWithRelations($model, $with, $joinType);
 
             if (is_array($eagerLoading)) {
@@ -603,11 +603,10 @@ class ActiveQuery extends Query implements ActiveQueryInterface
             return;
         }
 
-        list ($parentTable, $parentAlias) = $parent->getTableNameAndAlias();
-        list ($childTable, $childAlias) = $child->getTableNameAndAlias();
+        list($parentTable, $parentAlias) = $parent->getTableNameAndAlias();
+        list($childTable, $childAlias) = $child->getTableNameAndAlias();
 
         if (!empty($child->link)) {
-
             if (strpos($parentAlias, '{{') === false) {
                 $parentAlias = '{{' . $parentAlias . '}}';
             }

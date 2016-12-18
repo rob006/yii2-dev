@@ -21,7 +21,6 @@ use yii\base\InlineAction;
  */
 class ControllerTest extends TestCase
 {
-
     public function testBindActionParams()
     {
         $this->mockApplication();
@@ -38,7 +37,6 @@ class ControllerTest extends TestCase
         list($fromGet, $other) = $controller->bindActionParams($aksi1, $params);
         $this->assertEquals('from query params', $fromGet);
         $this->assertEquals('avaliable', $other);
-
     }
 
     public function testAsJson()
@@ -72,5 +70,4 @@ class ControllerTest extends TestCase
         $this->assertEquals(Response::FORMAT_XML, $result->format);
         $this->assertEquals($data, $result->data);
     }
-
 }

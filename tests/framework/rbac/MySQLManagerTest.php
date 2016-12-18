@@ -8,5 +8,4 @@ namespace yiiunit\framework\rbac;
  */
 class MySQLManagerTest extends DbManagerTestCase
 {
-
 }

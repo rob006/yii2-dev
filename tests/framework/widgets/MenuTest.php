@@ -157,6 +157,4 @@ HTML;
 
         $this->assertEqualsWithoutLE($expected, $output);
     }
-
-
 }

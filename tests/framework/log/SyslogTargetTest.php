@@ -5,15 +5,18 @@
 
 namespace yii\log {
 
-    function openlog() {
+    function openlog()
+    {
         \yiiunit\framework\log\SyslogTargetTest::openlog(func_get_args());
     }
 
-    function syslog() {
+    function syslog()
+    {
         \yiiunit\framework\log\SyslogTargetTest::syslog(func_get_args());
     }
 
-    function closelog() {
+    function closelog()
+    {
         \yiiunit\framework\log\SyslogTargetTest::closelog(func_get_args());
     }
 }
@@ -27,7 +30,7 @@ namespace yiiunit\framework\log {
 
     /**
      * Class SyslogTargetTest
-     * 
+     *
      * @package yiiunit\framework\log
      * @group log
      */
@@ -35,10 +38,10 @@ namespace yiiunit\framework\log {
     {
         /**
          * Array of static functions
-         * 
+         *
          * @var array
          */
-        static $functions = [];
+        public static $functions = [];
 
         /**
          * @var PHPUnit_Framework_MockObject_MockObject
@@ -145,7 +148,8 @@ namespace yiiunit\framework\log {
          * @param $arguments
          * @return mixed
          */
-        public static function __callStatic($name, $arguments) {
+        public static function __callStatic($name, $arguments)
+        {
             if (isset(static::$functions[$name]) && is_callable(static::$functions[$name])) {
                 $arguments = isset($arguments[0]) ? $arguments[0] : $arguments;
                 return forward_static_call(static::$functions[$name], $arguments);

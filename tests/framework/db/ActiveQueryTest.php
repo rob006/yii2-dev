@@ -135,15 +135,15 @@ abstract class ActiveQueryTest extends DatabaseTestCase
     public function testGetQueryTableName_from_not_set()
     {
         $query = new ActiveQuery(Customer::className());
-        $result = $this->invokeMethod($query,'getTableNameAndAlias');
+        $result = $this->invokeMethod($query, 'getTableNameAndAlias');
         $this->assertEquals(['customer','customer'], $result);
     }
 
     public function testGetQueryTableName_from_set()
     {
         $options = ['from' => ['alias'=>'customer']];
-        $query = new ActiveQuery(Customer::className(),$options);
-        $result = $this->invokeMethod($query,'getTableNameAndAlias');
+        $query = new ActiveQuery(Customer::className(), $options);
+        $result = $this->invokeMethod($query, 'getTableNameAndAlias');
         $this->assertEquals(['customer','alias'], $result);
     }
 

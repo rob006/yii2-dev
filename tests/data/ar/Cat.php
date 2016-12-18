@@ -18,7 +18,7 @@ class Cat extends Animal
 {
 
     /**
-     * 
+     *
      * @param self $record
      * @param array $row
      */
@@ -28,5 +28,4 @@ class Cat extends Animal
 
         $record->does = 'meow';
     }
-
 }

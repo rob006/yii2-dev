@@ -16,7 +16,7 @@
  *
  * NOTE: this file must be saved in UTF-8 encoding.
  */
-return array (
+return array(
   '(not set)' => '(määramata)',
   'An internal server error occurred.' => 'Ilmnes serveri sisemine viga.',
   'Are you sure you want to delete this item?' => 'Kas olete kindel, et soovite selle üksuse kustutada?',
