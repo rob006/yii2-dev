@@ -89,7 +89,7 @@ class OracleMutex extends DbMutex
 
         // inside pl/sql scopes pdo binding not working correctly :(
         $this->db->useMaster(function ($db) use ($name, $timeout, $releaseOnCommit, &$lockStatus) {
-            /** @var \yii\db\Connection $db */
+            /* @var $db \yii\db\Connection */
             $db->createCommand(
                 'DECLARE
     handle VARCHAR2(128);
@@ -116,7 +116,7 @@ END;',
     {
         $releaseStatus = null;
         $this->db->useMaster(function ($db) use ($name, &$releaseStatus) {
-            /** @var \yii\db\Connection $db */
+            /* @var $db \yii\db\Connection */
             $db->createCommand(
                 'DECLARE
     handle VARCHAR2(128);
