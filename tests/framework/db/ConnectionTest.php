@@ -7,6 +7,9 @@
 
 namespace yiiunit\framework\db;
 
+use Yii;
+use yii\base\InvalidConfigException;
+use yii\caching\ArrayCache;
 use yii\db\Connection;
 use yii\db\Transaction;
 
@@ -27,7 +30,7 @@ abstract class ConnectionTest extends DatabaseTestCase
         $connection = $this->getConnection(false, false);
 
         $this->assertFalse($connection->isActive);
-        $this->assertEquals(null, $connection->pdo);
+        $this->assertNull($connection->pdo);
 
         $connection->open();
         $this->assertTrue($connection->isActive);
@@ -35,7 +38,7 @@ abstract class ConnectionTest extends DatabaseTestCase
 
         $connection->close();
         $this->assertFalse($connection->isActive);
-        $this->assertEquals(null, $connection->pdo);
+        $this->assertNull($connection->pdo);
 
         $connection = new Connection();
         $connection->dsn = 'unknown::memory:';
@@ -48,8 +51,12 @@ abstract class ConnectionTest extends DatabaseTestCase
         $connection = $this->getConnection(false, false);
         $connection->open();
         $serialized = serialize($connection);
+
+        $this->assertNotNull($connection->pdo);
+
         $unserialized = unserialize($serialized);
         $this->assertInstanceOf('yii\db\Connection', $unserialized);
+        $this->assertNull($unserialized->pdo);
 
         $this->assertEquals(123, $unserialized->createCommand('SELECT 123')->queryScalar());
     }
@@ -222,6 +229,17 @@ abstract class ConnectionTest extends DatabaseTestCase
         });
     }
 
+    public function testNestedTransactionNotSupported()
+    {
+        $connection = $this->getConnection();
+        $connection->enableSavepoint = false;
+        $connection->transaction(function (Connection $db) {
+            $this->assertNotNull($db->transaction);
+            $this->expectException('yii\base\NotSupportedException');
+            $db->beginTransaction();
+        });
+    }
+
     public function testEnableQueryLog()
     {
         $connection = $this->getConnection();
@@ -390,7 +408,7 @@ abstract class ConnectionTest extends DatabaseTestCase
 
 
     /**
-     * Test whether slave connection is recovered when call getSlavePdo() after close()
+     * Test whether slave connection is recovered when call getSlavePdo() after close().
      *
      * @see https://github.com/yiisoft/yii2/issues/14165
      */
@@ -413,5 +431,66 @@ abstract class ConnectionTest extends DatabaseTestCase
         $this->assertNotFalse($slavePdo);
         $this->assertNotNull($slavePdo);
         $this->assertNotSame($masterPdo, $slavePdo);
+    }
+
+    public function testServerStatusCacheWorks()
+    {
+        $cache = new ArrayCache();
+        Yii::$app->set('cache', $cache);
+
+        $connection = $this->getConnection(true, false);
+        $connection->masters[] = [
+            'dsn' => $connection->dsn,
+            'username' => $connection->username,
+            'password' => $connection->password,
+        ];
+        $connection->shuffleMasters = false;
+
+        $cacheKey = ['yii\db\Connection::openFromPoolSequentially', $connection->dsn];
+
+        $this->assertFalse($cache->exists($cacheKey));
+        $connection->open();
+        $this->assertFalse($cache->exists($cacheKey), 'Connection was successful – cache must not contain information about this DSN');
+        $connection->close();
+
+        $cacheKey = ['yii\db\Connection::openFromPoolSequentially', 'host:invalid'];
+        $connection->masters[0]['dsn'] = 'host:invalid';
+        try {
+            $connection->open();
+        } catch (InvalidConfigException $e) {
+        }
+        $this->assertTrue($cache->exists($cacheKey), 'Connection was not successful – cache must contain information about this DSN');
+        $connection->close();
+    }
+
+    public function testServerStatusCacheCanBeDisabled()
+    {
+        $cache = new ArrayCache();
+        Yii::$app->set('cache', $cache);
+
+        $connection = $this->getConnection(true, false);
+        $connection->masters[] = [
+            'dsn' => $connection->dsn,
+            'username' => $connection->username,
+            'password' => $connection->password,
+        ];
+        $connection->shuffleMasters = false;
+        $connection->serverStatusCache = false;
+
+        $cacheKey = ['yii\db\Connection::openFromPoolSequentially', $connection->dsn];
+
+        $this->assertFalse($cache->exists($cacheKey));
+        $connection->open();
+        $this->assertFalse($cache->exists($cacheKey), 'Caching is disabled');
+        $connection->close();
+
+        $cacheKey = ['yii\db\Connection::openFromPoolSequentially', 'host:invalid'];
+        $connection->masters[0]['dsn'] = 'host:invalid';
+        try {
+            $connection->open();
+        } catch (InvalidConfigException $e) {
+        }
+        $this->assertFalse($cache->exists($cacheKey), 'Caching is disabled');
+        $connection->close();
     }
 }

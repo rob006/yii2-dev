@@ -302,7 +302,7 @@ You can also specify a custom pattern to format the date value:
 echo \Yii::t('app', 'Today is {0,date,yyyy-MM-dd}', time());
 ```
 
-[Formatting reference](http://icu-project.org/apiref/icu4c/classicu_1_1SimpleDateFormat.html).
+[Formatting reference](http://icu-project.org/apiref/icu4c/classicu_1_1SimpleDateFormat.html#details).
 
 
 #### Time <span id="time"></span>
@@ -325,7 +325,7 @@ You can also specify a custom pattern to format the time value:
 echo \Yii::t('app', 'It is {0,date,HH:mm}', time());
 ```
 
-[Formatting reference](http://icu-project.org/apiref/icu4c/classicu_1_1SimpleDateFormat.html).
+[Formatting reference](http://icu-project.org/apiref/icu4c/classicu_1_1SimpleDateFormat.html#details).
 
 
 #### Spellout <span id="spellout"></span>
@@ -416,7 +416,7 @@ while `one` matches `21` or `101`:
 
 These `other`, `few`, `many` and other special argument names vary depending on language. To learn which ones you should
 specify for a particular locale, please refer to "Plural Rules, Cardinal" at [http://intl.rmcreative.ru/](http://intl.rmcreative.ru/). 
-Alternatively you can refer to [rules reference at unicode.org](http://unicode.org/repos/cldr-tmp/trunk/diff/supplemental/language_plural_rules.html).
+Alternatively you can refer to [rules reference at unicode.org](http://cldr.unicode.org/index/cldr-spec/plural-rules).
 
 > Note: The above example Russian message is mainly used as a translated message, not an original message, unless you set
 > the [[yii\base\Application::$sourceLanguage|source language]] of your application as `ru-RU` and translating from Russian.

@@ -7,18 +7,20 @@
 
 namespace yiiunit\framework\rbac;
 
+use yii\base\InvalidParamException;
+use yii\rbac\BaseManager;
 use yii\rbac\Item;
 use yii\rbac\Permission;
 use yii\rbac\Role;
 use yiiunit\TestCase;
 
 /**
- * ManagerTestCase
+ * ManagerTestCase.
  */
 abstract class ManagerTestCase extends TestCase
 {
     /**
-     * @var \yii\rbac\ManagerInterface
+     * @var \yii\rbac\ManagerInterface|BaseManager
      */
     protected $auth;
 
@@ -93,7 +95,7 @@ abstract class ManagerTestCase extends TestCase
 
         $rule = $this->auth->getRule($ruleName);
         $this->assertEquals($ruleName, $rule->name);
-        $this->assertEquals(true, $rule->reallyReally);
+        $this->assertTrue($rule->reallyReally);
     }
 
     public function testUpdateRule()
@@ -106,24 +108,24 @@ abstract class ManagerTestCase extends TestCase
         $this->auth->update('isAuthor', $rule);
 
         $rule = $this->auth->getRule('isAuthor');
-        $this->assertEquals(null, $rule);
+        $this->assertNull($rule);
 
         $rule = $this->auth->getRule('newName');
         $this->assertEquals('newName', $rule->name);
-        $this->assertEquals(false, $rule->reallyReally);
+        $this->assertFalse($rule->reallyReally);
 
         $rule->reallyReally = true;
         $this->auth->update('newName', $rule);
 
         $rule = $this->auth->getRule('newName');
-        $this->assertEquals(true, $rule->reallyReally);
+        $this->assertTrue($rule->reallyReally);
 
         $item = $this->auth->getPermission('createPost');
         $item->name = 'new createPost';
         $this->auth->update('createPost', $item);
 
         $item = $this->auth->getPermission('createPost');
-        $this->assertEquals(null, $item);
+        $this->assertNull($item);
 
         $item = $this->auth->getPermission('new createPost');
         $this->assertEquals('new createPost', $item->name);
@@ -464,6 +466,7 @@ abstract class ManagerTestCase extends TestCase
 
     /**
      * @dataProvider RBACItemsProvider
+     * @param mixed $RBACItemType
      */
     public function testAssignRule($RBACItemType)
     {
@@ -531,6 +534,7 @@ abstract class ManagerTestCase extends TestCase
 
     /**
      * @dataProvider RBACItemsProvider
+     * @param mixed $RBACItemType
      */
     public function testRevokeRule($RBACItemType)
     {
@@ -559,7 +563,7 @@ abstract class ManagerTestCase extends TestCase
     }
 
     /**
-     * Create Role or Permission RBAC item
+     * Create Role or Permission RBAC item.
      * @param int $RBACItemType
      * @param string $name
      * @return Permission|Role
@@ -577,7 +581,7 @@ abstract class ManagerTestCase extends TestCase
     }
 
     /**
-     * Get Role or Permission RBAC item
+     * Get Role or Permission RBAC item.
      * @param int $RBACItemType
      * @param string $name
      * @return Permission|Role
@@ -595,8 +599,8 @@ abstract class ManagerTestCase extends TestCase
     }
 
     /**
-     * https://github.com/yiisoft/yii2/issues/10176
-     * https://github.com/yiisoft/yii2/issues/12681
+     * @see https://github.com/yiisoft/yii2/issues/10176
+     * @see https://github.com/yiisoft/yii2/issues/12681
      */
     public function testRuleWithPrivateFields()
     {
@@ -610,5 +614,21 @@ abstract class ManagerTestCase extends TestCase
         /** @var ActionRule $rule */
         $rule = $this->auth->getRule('action_rule');
         $this->assertInstanceOf(ActionRule::className(), $rule);
+    }
+
+    public function testDefaultRolesWithClosureReturningNonArrayValue()
+    {
+        $this->expectException('yii\base\InvalidValueException');
+        $this->expectExceptionMessage('Default roles closure must return an array');
+        $this->auth->defaultRoles = function () {
+            return 'test';
+        };
+    }
+
+    public function testDefaultRolesWithNonArrayValue()
+    {
+        $this->expectException('yii\base\InvalidArgumentException');
+        $this->expectExceptionMessage('Default roles must be either an array or a callable');
+        $this->auth->defaultRoles = 'test';
     }
 }

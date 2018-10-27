@@ -247,6 +247,17 @@ EOT;
         $this->assertEquals($expectedValue, $this->activeField->parts['{label}']);
     }
 
+    public function testTabularInputErrors()
+    {
+        $this->activeField->attribute = '[0]'.$this->attributeName;
+        $this->helperModel->addError($this->attributeName, 'Error Message');
+
+        $expectedValue = '<div class="form-group field-activefieldtestmodel-0-attributename has-error">';
+        $actualValue = $this->activeField->begin();
+
+        $this->assertEquals($expectedValue, $actualValue);
+    }
+
     public function hintDataProvider()
     {
         return [
@@ -258,6 +269,8 @@ EOT;
 
     /**
      * @dataProvider hintDataProvider
+     * @param mixed $hint
+     * @param string $expectedHtml
      */
     public function testHint($hint, $expectedHtml)
     {
@@ -338,6 +351,20 @@ EOD;
             'value2' => ['label' => 'value 2'],
         ]]);
         $this->assertEqualsWithoutLE($expectedValue, $this->activeField->parts['{input}']);
+    }
+
+    public function testRadioList()
+    {
+        $expectedValue = <<<'EOD'
+<div class="form-group field-activefieldtestmodel-attributename">
+<label class="control-label">Attribute Name</label>
+<input type="hidden" name="ActiveFieldTestModel[attributeName]" value=""><div id="activefieldtestmodel-attributename" role="radiogroup"><label><input type="radio" name="ActiveFieldTestModel[attributeName]" value="1"> Item One</label></div>
+<div class="hint-block">Hint for attributeName attribute</div>
+<div class="help-block"></div>
+</div>
+EOD;
+        $this->activeField->radioList(['1' => 'Item One']);
+        $this->assertEqualsWithoutLE($expectedValue, $this->activeField->render());
     }
 
     public function testGetClientOptionsReturnEmpty()
@@ -526,7 +553,39 @@ EOD;
     }
 
     /**
-     * Helper methods
+     * @depends testHiddenInput
+     *
+     * @see https://github.com/yiisoft/yii2/issues/14773
+     */
+    public function testOptionsClass()
+    {
+        $this->activeField->options = ['class' => 'test-wrapper'];
+        $expectedValue = <<<'HTML'
+<div class="test-wrapper field-activefieldtestmodel-attributename">
+
+<input type="hidden" id="activefieldtestmodel-attributename" class="form-control" name="ActiveFieldTestModel[attributeName]">
+
+
+</div>
+HTML;
+        $actualValue = $this->activeField->hiddenInput()->label(false)->error(false)->hint(false)->render();
+        $this->assertEqualsWithoutLE($expectedValue, trim($actualValue));
+
+        $this->activeField->options = ['class' => ['test-wrapper', 'test-add']];
+        $expectedValue = <<<'HTML'
+<div class="test-wrapper test-add field-activefieldtestmodel-attributename">
+
+<input type="hidden" id="activefieldtestmodel-attributename" class="form-control" name="ActiveFieldTestModel[attributeName]">
+
+
+</div>
+HTML;
+        $actualValue = $this->activeField->hiddenInput()->label(false)->error(false)->hint(false)->render();
+        $this->assertEqualsWithoutLE($expectedValue, trim($actualValue));
+    }
+
+    /**
+     * Helper methods.
      */
     protected function getView()
     {
@@ -551,7 +610,7 @@ class ActiveFieldTestModel extends DynamicModel
 }
 
 /**
- * Helper Classes
+ * Helper Classes.
  */
 class ActiveFieldExtend extends ActiveField
 {

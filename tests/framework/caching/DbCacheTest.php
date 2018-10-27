@@ -10,7 +10,7 @@ namespace yiiunit\framework\caching;
 use yii\caching\DbCache;
 
 /**
- * Class for testing file cache backend
+ * Class for testing file cache backend.
  * @group db
  * @group caching
  */
@@ -100,5 +100,19 @@ class DbCacheTest extends CacheTestCase
         $this->assertEquals('expire_testa', $cache->get('expire_testa'));
         static::$time++;
         $this->assertFalse($cache->get('expire_testa'));
+    }
+
+    public function testSynchronousSetWithTheSameKey()
+    {
+        $KEY = 'sync-test-key';
+        $VALUE = 'sync-test-value';
+
+        $cache = $this->getCacheInstance();
+        static::$time = \time();
+
+        $this->assertTrue($cache->set($KEY, $VALUE, 60));
+        $this->assertTrue($cache->set($KEY, $VALUE, 60));
+
+        $this->assertEquals($VALUE, $cache->get($KEY));
     }
 }

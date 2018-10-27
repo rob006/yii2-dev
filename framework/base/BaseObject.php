@@ -79,6 +79,7 @@ class BaseObject implements Configurable
     /**
      * Returns the fully qualified name of this class.
      * @return string the fully qualified name of this class.
+     * @deprecated since 2.0.14. On PHP >=5.5, use `::class` instead.
      */
     public static function className()
     {
@@ -87,6 +88,7 @@ class BaseObject implements Configurable
 
     /**
      * Constructor.
+     *
      * The default implementation does two things:
      *
      * - Initializes the object with the given configuration `$config`.
@@ -222,6 +224,7 @@ class BaseObject implements Configurable
 
     /**
      * Returns a value indicating whether a property is defined.
+     *
      * A property is defined if:
      *
      * - the class has a getter or setter method associated with the specified name
@@ -241,6 +244,7 @@ class BaseObject implements Configurable
 
     /**
      * Returns a value indicating whether a property can be read.
+     *
      * A property is readable if:
      *
      * - the class has a getter method associated with the specified name
@@ -259,6 +263,7 @@ class BaseObject implements Configurable
 
     /**
      * Returns a value indicating whether a property can be set.
+     *
      * A property is writable if:
      *
      * - the class has a setter method associated with the specified name

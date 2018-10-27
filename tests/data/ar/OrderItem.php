@@ -8,7 +8,7 @@
 namespace yiiunit\data\ar;
 
 /**
- * Class OrderItem
+ * Class OrderItem.
  *
  * @property int $order_id
  * @property int $item_id
@@ -43,5 +43,10 @@ class OrderItem extends ActiveRecord
     public function getOrderItemCompositeNoJoin()
     {
         return $this->hasOne(self::className(), ['item_id' => 'item_id', 'order_id' => 'order_id']);
+    }
+
+    public function getCustom()
+    {
+        return Order::find();
     }
 }

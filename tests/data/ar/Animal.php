@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @link http://www.yiiframework.com/
  * @copyright Copyright (c) 2008 Yii Software LLC
@@ -9,7 +8,7 @@
 namespace yiiunit\data\ar;
 
 /**
- * Class Animal
+ * Class Animal.
  *
  * @author Jose Lorente <jose.lorente.martin@gmail.com>
  * @property int $id
@@ -27,7 +26,7 @@ class Animal extends ActiveRecord
     public function init()
     {
         parent::init();
-        $this->type = get_called_class();
+        $this->type = \get_called_class();
     }
 
     public function getDoes()

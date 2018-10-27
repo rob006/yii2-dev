@@ -33,11 +33,11 @@ use yii\base\InvalidConfigException;
 class UrlRule extends BaseObject implements UrlRuleInterface
 {
     /**
-     * Set [[mode]] with this value to mark that this rule is for URL parsing only
+     * Set [[mode]] with this value to mark that this rule is for URL parsing only.
      */
     const PARSING_ONLY = 1;
     /**
-     * Set [[mode]] with this value to mark that this rule is for URL creation only
+     * Set [[mode]] with this value to mark that this rule is for URL creation only.
      */
     const CREATION_ONLY = 2;
     /**
@@ -179,6 +179,7 @@ class UrlRule extends BaseObject implements UrlRuleInterface
         if ($str === '') {
             return '/';
         }
+
         return $str;
     }
 
@@ -238,7 +239,7 @@ class UrlRule extends BaseObject implements UrlRuleInterface
             } else {
                 $this->host = $this->pattern;
             }
-        } elseif (strpos($this->pattern, '//') === 0) {
+        } elseif (strncmp($this->pattern, '//', 2) === 0) {
             if (($pos2 = strpos($this->pattern, '/', 2)) !== false) {
                 $this->host = substr($this->pattern, 0, $pos2);
             } else {
@@ -335,7 +336,7 @@ class UrlRule extends BaseObject implements UrlRuleInterface
         $this->pattern = '#^' . trim(strtr($this->_template, $tr), '/') . '$#u';
 
         // if host starts with relative scheme, then insert pattern to match any
-        if (strpos($this->host, '//') === 0) {
+        if (strncmp($this->host, '//', 2) === 0) {
             $this->pattern = substr_replace($this->pattern, '[\w]+://', 2, 0);
         }
 
@@ -434,7 +435,7 @@ class UrlRule extends BaseObject implements UrlRuleInterface
             $route = $this->route;
         }
 
-        Yii::trace("Request parsed with URL rule: {$this->name}", __METHOD__);
+        Yii::debug("Request parsed with URL rule: {$this->name}", __METHOD__);
 
         if ($normalized) {
             // pathInfo was changed by normalizer - we need also normalize route
@@ -579,6 +580,7 @@ class UrlRule extends BaseObject implements UrlRuleInterface
                 unset($matches[$placeholder]);
             }
         }
+
         return $matches;
     }
 
@@ -591,9 +593,10 @@ class UrlRule extends BaseObject implements UrlRuleInterface
      */
     private function trimSlashes($string)
     {
-        if (strpos($string, '//') === 0) {
+        if (strncmp($string, '//', 2) === 0) {
             return '//' . trim($string, '/');
         }
+
         return trim($string, '/');
     }
 }

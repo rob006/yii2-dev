@@ -144,6 +144,47 @@ class MigrateControllerTest extends TestCase
         ]);
     }
 
+    public function testUpdatingLongNamedMigration()
+    {
+        $this->createMigration(str_repeat('a', 180));
+
+        $result = $this->runMigrateControllerAction('up');
+
+        $this->assertContains('The migration name', $result);
+        $this->assertContains('is too long. Its not possible to apply this migration.', $result);
+    }
+
+    public function testNamedMigrationWithCustomLimit()
+    {
+        Yii::$app->db->createCommand()->createTable('migration', [
+            'version' => 'varchar(255) NOT NULL PRIMARY KEY', // varchar(255) is longer than the default of 180
+            'apply_time' => 'integer',
+        ])->execute();
+
+        $this->createMigration(str_repeat('a', 180));
+
+        $result = $this->runMigrateControllerAction('up');
+
+        $this->assertContains('1 migration was applied.', $result);
+        $this->assertContains('Migrated up successfully.', $result);
+    }
+
+    public function testCreateLongNamedMigration()
+    {
+        $this->setOutputCallback(function($output) {
+            return null;
+        });
+
+        $migrationName = str_repeat('a', 180);
+
+        $this->expectException('yii\console\Exception');
+        $this->expectExceptionMessage('The migration name is too long.');
+
+        $controller = $this->createMigrateController([]);
+        $params[0] = $migrationName;
+        $controller->run('create', $params);
+    }
+
     public function testGenerateDropMigration()
     {
         $tables = [
@@ -238,18 +279,22 @@ class MigrateControllerTest extends TestCase
      */
     public function testRefreshMigration()
     {
-      Yii::$app->db->createCommand(
-        "create table hall_of_fame(id int, string varchar(255))")->execute();
+        Yii::$app->db->createCommand('create table hall_of_fame(id int, string varchar(255))')
+            ->execute();
 
-      Yii::$app->db->createCommand(
-        "insert into hall_of_fame values(1, 'Qiang Xue');")->execute();
-      Yii::$app->db->createCommand(
-        "insert into hall_of_fame values(2, 'Alexander Makarov');")->execute();
+        Yii::$app->db->createCommand("insert into hall_of_fame values(1, 'Qiang Xue');")
+            ->execute();
+        Yii::$app->db->createCommand("insert into hall_of_fame values(2, 'Alexander Makarov');")
+            ->execute();
+
+        Yii::$app->db->createCommand('create view view_hall_of_fame as select * from hall_of_fame')
+            ->execute();
 
         $result = $this->runMigrateControllerAction('fresh');
 
         // Drop worked
         $this->assertContains('Table hall_of_fame dropped.', $result);
+        $this->assertContains('View view_hall_of_fame dropped.', $result);
 
         // Migration was restarted
         $this->assertContains('No new migrations found. Your system is up-to-date.', $result);

@@ -29,7 +29,7 @@ class LinkPagerTest extends \yiiunit\TestCase
     }
 
     /**
-     * Get pagination
+     * Get pagination.
      * @param int $page
      * @return Pagination
      */
@@ -143,5 +143,21 @@ class LinkPagerTest extends \yiiunit\TestCase
             '<div class="my-class active"><a href="/?r=test&amp;page=2" data-page="1">2</a></div>',
             $output
         );
+    }
+
+    /**
+     * @see https://github.com/yiisoft/yii2/issues/15536
+     */
+    public function testShouldTriggerInitEvent()
+    {
+        $initTriggered = false;
+        $output = LinkPager::widget([
+            'pagination' => $this->getPagination(1),
+            'on init' => function () use (&$initTriggered) {
+                $initTriggered = true;
+            }
+        ]);
+
+        $this->assertTrue($initTriggered);
     }
 }

@@ -13,6 +13,7 @@ use yii\db\CheckConstraint;
 use yii\db\ColumnSchema;
 use yii\db\Connection;
 use yii\db\Constraint;
+use yii\db\ConstraintFinderInterface;
 use yii\db\ConstraintFinderTrait;
 use yii\db\Expression;
 use yii\db\ForeignKeyConstraint;
@@ -21,7 +22,7 @@ use yii\db\TableSchema;
 use yii\helpers\ArrayHelper;
 
 /**
- * Schema is the class for retrieving metadata from an Oracle database
+ * Schema is the class for retrieving metadata from an Oracle database.
  *
  * @property string $lastInsertID The row ID of the last row inserted, or the last value retrieved from the
  * sequence object. This property is read-only.
@@ -29,7 +30,7 @@ use yii\helpers\ArrayHelper;
  * @author Qiang Xue <qiang.xue@gmail.com>
  * @since 2.0
  */
-class Schema extends \yii\db\Schema
+class Schema extends \yii\db\Schema implements ConstraintFinderInterface
 {
     use ConstraintFinderTrait;
 
@@ -41,20 +42,29 @@ class Schema extends \yii\db\Schema
         'ORA-00001: unique constraint' => 'yii\db\IntegrityException',
     ];
 
+    /**
+     * {@inheritdoc}
+     */
+    protected $tableQuoteCharacter = '"';
+
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function init()
     {
         parent::init();
         if ($this->defaultSchema === null) {
-            $this->defaultSchema = strtoupper($this->db->username);
+            $username = $this->db->username;
+            if (empty($username)) {
+                $username = isset($this->db->masters[0]['username']) ? $this->db->masters[0]['username'] : '';
+            }
+            $this->defaultSchema = strtoupper($username);
         }
     }
 
     /**
-     * @inheritDoc
+     * {@inheritdoc}
      */
     protected function resolveTableName($name)
     {
@@ -72,23 +82,23 @@ class Schema extends \yii\db\Schema
     }
 
     /**
-     * @inheritDoc
+     * {@inheritdoc}
+     * @see https://docs.oracle.com/cd/B28359_01/server.111/b28337/tdpsg_user_accounts.htm
      */
     protected function findSchemaNames()
     {
-        $sql = <<<'SQL'
-SELECT
-    USERNAME
-FROM DBA_USERS U
-WHERE
-    EXISTS (SELECT 1 FROM DBA_OBJECTS O WHERE O.OWNER = U.USERNAME)
-    AND DEFAULT_TABLESPACE NOT IN ('SYSTEM','SYSAUX')
+        static $sql = <<<'SQL'
+SELECT "u"."USERNAME"
+FROM "DBA_USERS" "u"
+WHERE "u"."DEFAULT_TABLESPACE" NOT IN ('SYSTEM', 'SYSAUX')
+ORDER BY "u"."USERNAME" ASC
 SQL;
+
         return $this->db->createCommand($sql)->queryColumn();
     }
 
     /**
-     * @inheritDoc
+     * {@inheritdoc}
      */
     protected function findTableNames($schema = '')
     {
@@ -129,11 +139,12 @@ SQL;
             }
             $names[] = $row['TABLE_NAME'];
         }
+
         return $names;
     }
 
     /**
-     * @inheritDoc
+     * {@inheritdoc}
      */
     protected function loadTableSchema($name)
     {
@@ -148,7 +159,7 @@ SQL;
     }
 
     /**
-     * @inheritDoc
+     * {@inheritdoc}
      */
     protected function loadTablePrimaryKey($tableName)
     {
@@ -156,7 +167,7 @@ SQL;
     }
 
     /**
-     * @inheritDoc
+     * {@inheritdoc}
      */
     protected function loadTableForeignKeys($tableName)
     {
@@ -164,7 +175,7 @@ SQL;
     }
 
     /**
-     * @inheritDoc
+     * {@inheritdoc}
      */
     protected function loadTableIndexes($tableName)
     {
@@ -200,11 +211,12 @@ SQL;
                 'columnNames' => ArrayHelper::getColumn($index, 'column_name'),
             ]);
         }
+
         return $result;
     }
 
     /**
-     * @inheritDoc
+     * {@inheritdoc}
      */
     protected function loadTableUniques($tableName)
     {
@@ -212,7 +224,7 @@ SQL;
     }
 
     /**
-     * @inheritDoc
+     * {@inheritdoc}
      */
     protected function loadTableChecks($tableName)
     {
@@ -220,7 +232,7 @@ SQL;
     }
 
     /**
-     * @inheritDoc
+     * {@inheritdoc}
      * @throws NotSupportedException if this method is called.
      */
     protected function loadTableDefaultValues($tableName)
@@ -229,7 +241,7 @@ SQL;
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function releaseSavepoint($name)
     {
@@ -237,7 +249,7 @@ SQL;
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function quoteSimpleTableName($name)
     {
@@ -245,7 +257,7 @@ SQL;
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function createQueryBuilder()
     {
@@ -253,7 +265,7 @@ SQL;
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function createColumnSchemaBuilder($type, $length = null)
     {
@@ -293,7 +305,11 @@ SELECT
     A.DATA_TYPE,
     A.DATA_PRECISION,
     A.DATA_SCALE,
-    A.DATA_LENGTH,
+    (
+      CASE A.CHAR_USED WHEN 'C' THEN A.CHAR_LENGTH
+        ELSE A.DATA_LENGTH
+      END
+    ) AS DATA_LENGTH,
     A.NULLABLE,
     A.DATA_DEFAULT,
     COM.COMMENTS AS COLUMN_COMMENT
@@ -327,11 +343,12 @@ SQL;
             $c = $this->createColumn($column);
             $table->columns[$c->name] = $c;
         }
+
         return true;
     }
 
     /**
-     * Sequence name of table
+     * Sequence name of table.
      *
      * @param string $tableName
      * @internal param \yii\db\TableSchema $table->name the table schema
@@ -376,7 +393,7 @@ SQL;
     }
 
     /**
-     * Creates ColumnSchema instance
+     * Creates ColumnSchema instance.
      *
      * @param array $column
      * @return ColumnSchema
@@ -419,7 +436,7 @@ SQL;
     }
 
     /**
-     * Finds constraints and fills them into TableSchema object passed
+     * Finds constraints and fills them into TableSchema object passed.
      * @param TableSchema $table
      */
     protected function findConstraints($table)
@@ -479,8 +496,7 @@ SQL;
         }
 
         foreach ($constraints as $constraint) {
-            $name = array_keys($constraint);
-            $name = current($name);
+            $name = current(array_keys($constraint));
 
             $table->foreignKeys[$name] = array_merge([$constraint['tableName']], $constraint['columns']);
         }
@@ -488,7 +504,7 @@ SQL;
 
     /**
      * Returns all unique indexes for the given table.
-     * Each array element is of the following structure:
+     * Each array element is of the following structure:.
      *
      * ```php
      * [
@@ -523,11 +539,12 @@ SQL;
         foreach ($command->queryAll() as $row) {
             $result[$row['INDEX_NAME']][] = $row['COLUMN_NAME'];
         }
+
         return $result;
     }
 
     /**
-     * Extracts the data types for the given column
+     * Extracts the data types for the given column.
      * @param ColumnSchema $column
      * @param string $dbType DB type
      * @param string $precision total number of digits.
@@ -581,7 +598,7 @@ SQL;
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function insert($table, $columns)
     {
@@ -604,7 +621,7 @@ SQL;
                 } else {
                     $returnParams[$phName]['dataType'] = \PDO::PARAM_INT;
                 }
-                $returnParams[$phName]['size'] = isset($columnSchemas[$name]) && isset($columnSchemas[$name]->size) ? $columnSchemas[$name]->size : -1;
+                $returnParams[$phName]['size'] = isset($columnSchemas[$name]->size) ? $columnSchemas[$name]->size : -1;
                 $returning[] = $this->quoteColumnName($name);
             }
             $sql .= ' RETURNING ' . implode(', ', $returning) . ' INTO ' . implode(', ', array_keys($returnParams));
@@ -715,6 +732,7 @@ SQL;
         foreach ($result as $type => $data) {
             $this->setTableMetadata($tableName, $type, $data);
         }
+
         return $result[$returnType];
     }
 }

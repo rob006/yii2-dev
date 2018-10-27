@@ -395,7 +395,7 @@ abstract class UniqueValidatorTest extends DatabaseTestCase
     }
 
     /**
-     * Test ambiguous column name in select clause
+     * Test ambiguous column name in select clause.
      * @see https://github.com/yiisoft/yii2/issues/14042
      */
     public function testAmbiguousColumnName()
@@ -415,10 +415,10 @@ abstract class UniqueValidatorTest extends DatabaseTestCase
     }
 
     /**
-     * Test expresssion in targetAttribute
+     * Test expression in targetAttribute.
      * @see https://github.com/yiisoft/yii2/issues/14304
      */
-    public function testExpresionInAttributeColumnName()
+    public function testExpressionInAttributeColumnName()
     {
         $validator = new UniqueValidator([
             'targetAttribute' => [
@@ -433,5 +433,59 @@ abstract class UniqueValidatorTest extends DatabaseTestCase
         $model->save(false);
         $validator->validateAttribute($model, 'title');
         $this->assertFalse($model->hasErrors(), 'There were errors: ' . json_encode($model->getErrors()));
+    }
+
+    /**
+     * Test validating a class with default scope
+     * @see https://github.com/yiisoft/yii2/issues/14484
+    */
+    public function testFindModelWith()
+    {
+        $validator = new UniqueValidator([
+            'targetAttribute' => ['status', 'profile_id']
+        ]);
+        $model = WithCustomer::find()->one();
+        try {
+            $validator->validateAttribute($model, 'email');
+            $this->assertTrue(true);
+        } catch (\Exception $exception) {
+            $this->fail('Query is crashed because "with" relation cannot be loaded');
+        }
+    }
+    
+    public function testForceMaster()
+    {
+        $connection = $this->getConnectionWithInvalidSlave();
+        ActiveRecord::$db = $connection;
+
+        $model = null;
+        $connection->useMaster(function() use (&$model) {
+            $model = WithCustomer::find()->one();
+        });
+
+        $validator = new UniqueValidator([
+            'forceMasterDb' => true,
+            'targetAttribute' => ['status', 'profile_id']
+        ]);
+        $validator->validateAttribute($model, 'email');
+
+        $this->expectException('\yii\base\InvalidConfigException');
+        $validator = new UniqueValidator([
+            'forceMasterDb' => false,
+            'targetAttribute' => ['status', 'profile_id']
+        ]);
+        $validator->validateAttribute($model, 'email');
+
+        ActiveRecord::$db = $this->getConnection();
+    }
+}
+
+class WithCustomer extends Customer {
+    public static function find() {
+        $res = parent::find();
+
+        $res->with('profile');
+
+        return $res;
     }
 }

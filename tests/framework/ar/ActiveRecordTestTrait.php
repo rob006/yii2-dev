@@ -25,25 +25,25 @@ trait ActiveRecordTestTrait
 {
     /* @var $this TestCase */
     /**
-     * This method should return the classname of Customer class
+     * This method should return the classname of Customer class.
      * @return string
      */
     abstract public function getCustomerClass();
 
     /**
-     * This method should return the classname of Order class
+     * This method should return the classname of Order class.
      * @return string
      */
     abstract public function getOrderClass();
 
     /**
-     * This method should return the classname of OrderItem class
+     * This method should return the classname of OrderItem class.
      * @return string
      */
     abstract public function getOrderItemClass();
 
     /**
-     * This method should return the classname of Item class
+     * This method should return the classname of Item class.
      * @return string
      */
     abstract public function getItemClass();
@@ -53,7 +53,7 @@ trait ActiveRecordTestTrait
     abstract public function getOrderItemWithNullFKmClass();
 
     /**
-     * can be overridden to do things after save()
+     * Can be overridden to do things after save().
      */
     public function afterSave()
     {
@@ -84,8 +84,7 @@ trait ActiveRecordTestTrait
         $customer = $customerClass::findOne(5);
         $this->assertNull($customer);
         $customer = $customerClass::findOne(['id' => [5, 6, 1]]);
-        // can't use assertCount() here since it will count model attributes instead
-        $this->assertEquals(1, count($customer));
+        $this->assertInstanceOf($customerClass, $customer);
         $customer = $customerClass::find()->where(['id' => [5, 6, 1]])->one();
         $this->assertNotNull($customer);
 
@@ -559,8 +558,9 @@ trait ActiveRecordTestTrait
     }
 
     /**
-     * Ensure ActiveRelationTrait does preserve order of items on find via()
-     * https://github.com/yiisoft/yii2/issues/1310
+     * Ensure ActiveRelationTrait does preserve order of items on find via().
+     *
+     * @see https://github.com/yiisoft/yii2/issues/1310.
      */
     public function testFindEagerViaRelationPreserveOrder()
     {
@@ -1105,7 +1105,7 @@ trait ActiveRecordTestTrait
         Event::on(BaseActiveRecord::className(), BaseActiveRecord::EVENT_AFTER_FIND, function ($event) use (&$afterFindCalls) {
             /* @var $ar BaseActiveRecord */
             $ar = $event->sender;
-            $afterFindCalls[] = [get_class($ar), $ar->getIsNewRecord(), $ar->getPrimaryKey(), $ar->isRelationPopulated('orders')];
+            $afterFindCalls[] = [\get_class($ar), $ar->getIsNewRecord(), $ar->getPrimaryKey(), $ar->isRelationPopulated('orders')];
         });
 
         $customer = $customerClass::findOne(1);
@@ -1160,7 +1160,7 @@ trait ActiveRecordTestTrait
         Event::on(BaseActiveRecord::className(), BaseActiveRecord::EVENT_AFTER_REFRESH, function ($event) use (&$afterRefreshCalls) {
             /* @var $ar BaseActiveRecord */
             $ar = $event->sender;
-            $afterRefreshCalls[] = [get_class($ar), $ar->getIsNewRecord(), $ar->getPrimaryKey(), $ar->isRelationPopulated('orders')];
+            $afterRefreshCalls[] = [\get_class($ar), $ar->getIsNewRecord(), $ar->getPrimaryKey(), $ar->isRelationPopulated('orders')];
         });
 
         $customer = $customerClass::findOne(1);

@@ -62,6 +62,7 @@ class CacheController extends Controller
 
     /**
      * Flushes given cache components.
+     *
      * For example,
      *
      * ```
@@ -270,6 +271,12 @@ class CacheController extends Controller
                 $caches[$name] = $component['class'];
             } elseif (is_string($component) && $this->isCacheClass($component)) {
                 $caches[$name] = $component;
+            } elseif ($component instanceof \Closure) {
+                $cache = Yii::$app->get($name);
+                if ($this->isCacheClass($cache)) {
+                    $cacheClass = get_class($cache);
+                    $caches[$name] = $cacheClass;
+                }
             }
         }
 
@@ -287,12 +294,12 @@ class CacheController extends Controller
     }
 
     /**
-     * Checks if cache of a certain class can be flushed
+     * Checks if cache of a certain class can be flushed.
      * @param string $className class name.
      * @return bool
      */
     private function canBeFlushed($className)
     {
-        return !is_a($className, ApcCache::className(), true) || php_sapi_name() !== 'cli';
+        return !is_a($className, ApcCache::className(), true) || PHP_SAPI !== 'cli';
     }
 }

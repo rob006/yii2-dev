@@ -7,6 +7,7 @@
 
 namespace yiiunit\framework\db;
 
+use yii\db\conditions\BetweenColumnsCondition;
 use yii\db\cubrid\QueryBuilder as CubridQueryBuilder;
 use yii\db\Expression;
 use yii\db\mssql\QueryBuilder as MssqlQueryBuilder;
@@ -18,6 +19,7 @@ use yii\db\QueryBuilder;
 use yii\db\Schema;
 use yii\db\SchemaBuilderTrait;
 use yii\db\sqlite\QueryBuilder as SqliteQueryBuilder;
+use yii\helpers\ArrayHelper;
 use yiiunit\data\base\TraversableObject;
 
 abstract class QueryBuilderTest extends DatabaseTestCase
@@ -41,6 +43,8 @@ abstract class QueryBuilderTest extends DatabaseTestCase
     /**
      * @throws \Exception
      * @return QueryBuilder
+     * @param bool $reset
+     * @param bool $open
      */
     protected function getQueryBuilder($reset = true, $open = false)
     {
@@ -66,8 +70,8 @@ abstract class QueryBuilderTest extends DatabaseTestCase
     }
 
     /**
-     * this is not used as a dataprovider for testGetColumnType to speed up the test
-     * when used as dataprovider every single line will cause a reconnect with the database which is not needed here
+     * This is not used as a dataprovider for testGetColumnType to speed up the test
+     * when used as dataprovider every single line will cause a reconnect with the database which is not needed here.
      */
     public function columnTypes()
     {
@@ -276,7 +280,6 @@ abstract class QueryBuilderTest extends DatabaseTestCase
                 Schema::TYPE_DATETIME . ' NOT NULL',
                 $this->dateTime()->notNull(),
                 [
-                    'mysql' => 'datetime NOT NULL',
                     'postgres' => 'timestamp(0) NOT NULL',
                     'sqlite' => 'datetime NOT NULL',
                     'oci' => 'TIMESTAMP NOT NULL',
@@ -288,7 +291,6 @@ abstract class QueryBuilderTest extends DatabaseTestCase
                 Schema::TYPE_DATETIME,
                 $this->dateTime(),
                 [
-                    'mysql' => 'datetime',
                     'postgres' => 'timestamp(0)',
                     'sqlite' => 'datetime',
                     'oci' => 'TIMESTAMP',
@@ -635,6 +637,40 @@ abstract class QueryBuilderTest extends DatabaseTestCase
                 ],
             ],
             [
+                Schema::TYPE_TINYINT . '(2)',
+                $this->tinyInteger(2),
+                [
+                    'mysql' => 'tinyint(2)',
+                    'postgres' => 'smallint',
+                    'sqlite' => 'tinyint',
+                    'oci' => 'NUMBER(2)',
+                    'sqlsrv' => 'tinyint',
+                    'cubrid' => 'smallint',
+                ],
+            ],
+            [
+                Schema::TYPE_TINYINT . ' UNSIGNED',
+                $this->tinyInteger()->unsigned(),
+                [
+                    'mysql' => 'tinyint(3) UNSIGNED',
+                    'postgres' => 'smallint UNSIGNED',
+                    'sqlite' => 'tinyint UNSIGNED',
+                    'cubrid' => 'smallint UNSIGNED',
+                ],
+            ],
+            [
+                Schema::TYPE_TINYINT,
+                $this->tinyInteger(),
+                [
+                    'mysql' => 'tinyint(3)',
+                    'postgres' => 'smallint',
+                    'sqlite' => 'tinyint',
+                    'oci' => 'NUMBER(3)',
+                    'sqlsrv' => 'smallint',
+                    'cubrid' => 'smallint',
+                ],
+            ],
+            [
                 Schema::TYPE_SMALLINT . '(8)',
                 $this->smallInteger(8),
                 [
@@ -833,7 +869,6 @@ abstract class QueryBuilderTest extends DatabaseTestCase
                 Schema::TYPE_TIME . ' NOT NULL',
                 $this->time()->notNull(),
                 [
-                    'mysql' => 'time NOT NULL',
                     'postgres' => 'time(0) NOT NULL',
                     'sqlite' => 'time NOT NULL',
                     'oci' => 'TIMESTAMP NOT NULL',
@@ -845,7 +880,6 @@ abstract class QueryBuilderTest extends DatabaseTestCase
                 Schema::TYPE_TIME,
                 $this->time(),
                 [
-                    'mysql' => 'time',
                     'postgres' => 'time(0)',
                     'sqlite' => 'time',
                     'oci' => 'TIMESTAMP',
@@ -868,7 +902,6 @@ abstract class QueryBuilderTest extends DatabaseTestCase
                 Schema::TYPE_TIMESTAMP . ' NOT NULL',
                 $this->timestamp()->notNull(),
                 [
-                    'mysql' => 'timestamp NOT NULL',
                     'postgres' => 'timestamp(0) NOT NULL',
                     'sqlite' => 'timestamp NOT NULL',
                     'oci' => 'TIMESTAMP NOT NULL',
@@ -880,7 +913,11 @@ abstract class QueryBuilderTest extends DatabaseTestCase
                 Schema::TYPE_TIMESTAMP,
                 $this->timestamp(),
                 [
-                    'mysql' => 'timestamp',
+                    /**
+                     * MySQL has its own TIMESTAMP test realization
+                     * @see \yiiunit\framework\db\mysql\QueryBuilderTest::columnTypes()
+                     */
+
                     'postgres' => 'timestamp(0)',
                     'sqlite' => 'timestamp',
                     'oci' => 'TIMESTAMP',
@@ -892,7 +929,6 @@ abstract class QueryBuilderTest extends DatabaseTestCase
                 Schema::TYPE_TIMESTAMP . ' NULL DEFAULT NULL',
                 $this->timestamp()->defaultValue(null),
                 [
-                    'mysql' => 'timestamp NULL DEFAULT NULL',
                     'postgres' => 'timestamp(0) NULL DEFAULT NULL',
                     'sqlite' => 'timestamp NULL DEFAULT NULL',
                     'sqlsrv' => 'timestamp NULL DEFAULT NULL',
@@ -1054,17 +1090,18 @@ abstract class QueryBuilderTest extends DatabaseTestCase
 
             // not
             [['not', 'name'], 'NOT (name)', []],
+            [['not', (new Query)->select('exists')->from('some_table')], 'NOT ((SELECT [[exists]] FROM [[some_table]]))', []],
 
             // and
             [['and', 'id=1', 'id=2'], '(id=1) AND (id=2)', []],
             [['and', 'type=1', ['or', 'id=1', 'id=2']], '(type=1) AND ((id=1) OR (id=2))', []],
             [['and', 'id=1', new Expression('id=:qp0', [':qp0' => 2])], '(id=1) AND (id=:qp0)', [':qp0' => 2]],
+            [['and', ['expired' => false], (new Query)->select('count(*) > 1')->from('queue')], '([[expired]]=:qp0) AND ((SELECT count(*) > 1 FROM [[queue]]))', [':qp0' => false]],
 
             // or
             [['or', 'id=1', 'id=2'], '(id=1) OR (id=2)', []],
             [['or', 'type=1', ['or', 'id=1', 'id=2']], '(type=1) OR ((id=1) OR (id=2))', []],
             [['or', 'type=1', new Expression('id=:qp0', [':qp0' => 1])], '(type=1) OR (id=:qp0)', [':qp0' => 1]],
-
 
             // between
             [['between', 'id', 1, 10], '[[id]] BETWEEN :qp0 AND :qp1', [':qp0' => 1, ':qp1' => 10]],
@@ -1073,9 +1110,14 @@ abstract class QueryBuilderTest extends DatabaseTestCase
             [['between', 'date', new Expression('(NOW() - INTERVAL 1 MONTH)'), 123], '[[date]] BETWEEN (NOW() - INTERVAL 1 MONTH) AND :qp0', [':qp0' => 123]],
             [['not between', 'date', new Expression('(NOW() - INTERVAL 1 MONTH)'), new Expression('NOW()')], '[[date]] NOT BETWEEN (NOW() - INTERVAL 1 MONTH) AND NOW()', []],
             [['not between', 'date', new Expression('(NOW() - INTERVAL 1 MONTH)'), 123], '[[date]] NOT BETWEEN (NOW() - INTERVAL 1 MONTH) AND :qp0', [':qp0' => 123]],
+            [new BetweenColumnsCondition('2018-02-11', 'BETWEEN', 'create_time', 'update_time'), ':qp0 BETWEEN [[create_time]] AND [[update_time]]', [':qp0' => '2018-02-11']],
+            [new BetweenColumnsCondition('2018-02-11', 'NOT BETWEEN', 'NOW()', 'update_time'), ':qp0 NOT BETWEEN NOW() AND [[update_time]]', [':qp0' => '2018-02-11']],
+            [new BetweenColumnsCondition(new Expression('NOW()'), 'BETWEEN', 'create_time', 'update_time'), 'NOW() BETWEEN [[create_time]] AND [[update_time]]', []],
+            [new BetweenColumnsCondition(new Expression('NOW()'), 'NOT BETWEEN', 'create_time', 'update_time'), 'NOW() NOT BETWEEN [[create_time]] AND [[update_time]]', []],
+            [new BetweenColumnsCondition(new Expression('NOW()'), 'NOT BETWEEN', (new Query)->select('min_date')->from('some_table'), 'max_date'), 'NOW() NOT BETWEEN (SELECT [[min_date]] FROM [[some_table]]) AND [[max_date]]', []],
 
             // in
-            [['in', 'id', [1, 2, 3]], '[[id]] IN (:qp0, :qp1, :qp2)', [':qp0' => 1, ':qp1' => 2, ':qp2' => 3]],
+            [['in', 'id', [1, 2, (new Query())->select('three')->from('digits')]], '[[id]] IN (:qp0, :qp1, (SELECT [[three]] FROM [[digits]]))', [':qp0' => 1, ':qp1' => 2]],
             [['not in', 'id', [1, 2, 3]], '[[id]] NOT IN (:qp0, :qp1, :qp2)', [':qp0' => 1, ':qp1' => 2, ':qp2' => 3]],
             [['in', 'id', (new Query())->select('id')->from('users')->where(['active' => 1])], '[[id]] IN (SELECT [[id]] FROM [[users]] WHERE [[active]]=:qp0)', [':qp0' => 1]],
             [['not in', 'id', (new Query())->select('id')->from('users')->where(['active' => 1])], '[[id]] NOT IN (SELECT [[id]] FROM [[users]] WHERE [[active]]=:qp0)', [':qp0' => 1]],
@@ -1154,6 +1196,7 @@ abstract class QueryBuilderTest extends DatabaseTestCase
         foreach ($conditions as $i => $condition) {
             $conditions[$i][1] = $this->replaceQuotes($condition[1]);
         }
+
         return $conditions;
     }
 
@@ -1171,13 +1214,13 @@ abstract class QueryBuilderTest extends DatabaseTestCase
 
             // and
             [['and', '', ''], '', []],
-            [['and', '', 'id=2'], '(id=2)', []],
-            [['and', 'id=1', ''], '(id=1)', []],
-            [['and', 'type=1', ['or', '', 'id=2']], '(type=1) AND ((id=2))', []],
+            [['and', '', 'id=2'], 'id=2', []],
+            [['and', 'id=1', ''], 'id=1', []],
+            [['and', 'type=1', ['or', '', 'id=2']], '(type=1) AND (id=2)', []],
 
             // or
-            [['or', 'id=1', ''], '(id=1)', []],
-            [['or', 'type=1', ['or', '', 'id=2']], '(type=1) OR ((id=2))', []],
+            [['or', 'id=1', ''], 'id=1', []],
+            [['or', 'type=1', ['or', '', 'id=2']], '(type=1) OR (id=2)', []],
 
 
             // between
@@ -1202,11 +1245,15 @@ abstract class QueryBuilderTest extends DatabaseTestCase
         foreach ($conditions as $i => $condition) {
             $conditions[$i][1] = $this->replaceQuotes($condition[1]);
         }
+
         return $conditions;
     }
 
     /**
      * @dataProvider conditionProvider
+     * @param array $condition
+     * @param string $expected
+     * @param array $expectedParams
      */
     public function testBuildCondition($condition, $expected, $expectedParams)
     {
@@ -1218,6 +1265,9 @@ abstract class QueryBuilderTest extends DatabaseTestCase
 
     /**
      * @dataProvider filterConditionProvider
+     * @param array $condition
+     * @param string $expected
+     * @param array $expectedParams
      */
     public function testBuildFilterCondition($condition, $expected, $expectedParams)
     {
@@ -1255,6 +1305,7 @@ abstract class QueryBuilderTest extends DatabaseTestCase
 
     /**
      * @dataProvider primaryKeysProvider
+     * @param string $sql
      */
     public function testAddDropPrimaryKey($sql, \Closure $builder)
     {
@@ -1290,6 +1341,7 @@ abstract class QueryBuilderTest extends DatabaseTestCase
 
     /**
      * @dataProvider foreignKeysProvider
+     * @param string $sql
      */
     public function testAddDropForeignKey($sql, \Closure $builder)
     {
@@ -1337,6 +1389,7 @@ abstract class QueryBuilderTest extends DatabaseTestCase
 
     /**
      * @dataProvider indexesProvider
+     * @param string $sql
      */
     public function testCreateDropIndex($sql, \Closure $builder)
     {
@@ -1373,6 +1426,7 @@ abstract class QueryBuilderTest extends DatabaseTestCase
 
     /**
      * @dataProvider uniquesProvider
+     * @param string $sql
      */
     public function testAddDropUnique($sql, \Closure $builder)
     {
@@ -1401,6 +1455,7 @@ abstract class QueryBuilderTest extends DatabaseTestCase
 
     /**
      * @dataProvider checksProvider
+     * @param string $sql
      */
     public function testAddDropCheck($sql, \Closure $builder)
     {
@@ -1429,6 +1484,7 @@ abstract class QueryBuilderTest extends DatabaseTestCase
 
     /**
      * @dataProvider defaultValuesProvider
+     * @param string $sql
      */
     public function testAddDropDefaultValue($sql, \Closure $builder)
     {
@@ -1445,6 +1501,8 @@ abstract class QueryBuilderTest extends DatabaseTestCase
 
     /**
      * @dataProvider existsParamsProvider
+     * @param string $cond
+     * @param string $expectedQuerySql
      */
     public function testBuildWhereExists($cond, $expectedQuerySql)
     {
@@ -1607,7 +1665,7 @@ abstract class QueryBuilderTest extends DatabaseTestCase
     }
 
     /**
-     * https://github.com/yiisoft/yii2/issues/10869
+     * @see https://github.com/yiisoft/yii2/issues/10869
      */
     public function testFromIndexHint()
     {
@@ -1747,11 +1805,332 @@ abstract class QueryBuilderTest extends DatabaseTestCase
         $this->assertEquals([':to' => 4], $params);
     }
 
-//    public function testInsert()
-//    {
-//        // TODO implement
-//    }
-//
+    public function insertProvider()
+    {
+        return [
+            'regular-values' => [
+                'customer',
+                [
+                    'email' => 'test@example.com',
+                    'name' => 'silverfire',
+                    'address' => 'Kyiv {{city}}, Ukraine',
+                    'is_active' => false,
+                    'related_id' => null,
+                ],
+                [],
+                $this->replaceQuotes('INSERT INTO [[customer]] ([[email]], [[name]], [[address]], [[is_active]], [[related_id]]) VALUES (:qp0, :qp1, :qp2, :qp3, :qp4)'),
+                [
+                    ':qp0' => 'test@example.com',
+                    ':qp1' => 'silverfire',
+                    ':qp2' => 'Kyiv {{city}}, Ukraine',
+                    ':qp3' => false,
+                    ':qp4' => null,
+                ],
+            ],
+            'params-and-expressions' => [
+                '{{%type}}',
+                [
+                    '{{%type}}.[[related_id]]' => null,
+                    '[[time]]' => new Expression('now()'),
+                ],
+                [],
+                'INSERT INTO {{%type}} ({{%type}}.[[related_id]], [[time]]) VALUES (:qp0, now())',
+                [
+                    ':qp0' => null,
+                ],
+            ],
+            'carry passed params' => [
+                'customer',
+                [
+                    'email' => 'test@example.com',
+                    'name' => 'sergeymakinen',
+                    'address' => '{{city}}',
+                    'is_active' => false,
+                    'related_id' => null,
+                    'col' => new Expression('CONCAT(:phFoo, :phBar)', [':phFoo' => 'foo']),
+                ],
+                [':phBar' => 'bar'],
+                $this->replaceQuotes('INSERT INTO [[customer]] ([[email]], [[name]], [[address]], [[is_active]], [[related_id]], [[col]]) VALUES (:qp1, :qp2, :qp3, :qp4, :qp5, CONCAT(:phFoo, :phBar))'),
+                [
+                    ':phBar' => 'bar',
+                    ':qp1' => 'test@example.com',
+                    ':qp2' => 'sergeymakinen',
+                    ':qp3' => '{{city}}',
+                    ':qp4' => false,
+                    ':qp5' => null,
+                    ':phFoo' => 'foo',
+                ],
+            ],
+            'carry passed params (query)' => [
+                'customer',
+                (new Query())
+                    ->select([
+                        'email',
+                        'name',
+                        'address',
+                        'is_active',
+                        'related_id',
+                    ])
+                    ->from('customer')
+                    ->where([
+                        'email' => 'test@example.com',
+                        'name' => 'sergeymakinen',
+                        'address' => '{{city}}',
+                        'is_active' => false,
+                        'related_id' => null,
+                        'col' => new Expression('CONCAT(:phFoo, :phBar)', [':phFoo' => 'foo']),
+                    ]),
+                [':phBar' => 'bar'],
+                $this->replaceQuotes('INSERT INTO [[customer]] ([[email]], [[name]], [[address]], [[is_active]], [[related_id]]) SELECT [[email]], [[name]], [[address]], [[is_active]], [[related_id]] FROM [[customer]] WHERE ([[email]]=:qp1) AND ([[name]]=:qp2) AND ([[address]]=:qp3) AND ([[is_active]]=:qp4) AND ([[related_id]] IS NULL) AND ([[col]]=CONCAT(:phFoo, :phBar))'),
+                [
+                    ':phBar' => 'bar',
+                    ':qp1' => 'test@example.com',
+                    ':qp2' => 'sergeymakinen',
+                    ':qp3' => '{{city}}',
+                    ':qp4' => false,
+                    ':phFoo' => 'foo',
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * @dataProvider insertProvider
+     * @param string $table
+     * @param array $columns
+     * @param array $params
+     * @param string $expectedSQL
+     * @param array $expectedParams
+     */
+    public function testInsert($table, $columns, $params, $expectedSQL, $expectedParams)
+    {
+        $actualParams = $params;
+        $actualSQL = $this->getQueryBuilder()->insert($table, $columns, $actualParams);
+        $this->assertSame($expectedSQL, $actualSQL);
+        $this->assertSame($expectedParams, $actualParams);
+    }
+
+    /**
+     * Dummy test to speed up QB's tests which rely on DB schema
+     */
+    public function testInitFixtures()
+    {
+        $this->assertInstanceOf('yii\db\QueryBuilder', $this->getQueryBuilder(true, true));
+    }
+
+    public function upsertProvider()
+    {
+        return [
+            'regular values' => [
+                'T_upsert',
+                [
+                    'email' => 'test@example.com',
+                    'address' => 'bar {{city}}',
+                    'status' => 1,
+                    'profile_id' => null,
+                ],
+                true,
+                null,
+                [
+                    ':qp0' => 'test@example.com',
+                    ':qp1' => 'bar {{city}}',
+                    ':qp2' => 1,
+                    ':qp3' => null,
+                ],
+            ],
+            'regular values with update part' => [
+                'T_upsert',
+                [
+                    'email' => 'test@example.com',
+                    'address' => 'bar {{city}}',
+                    'status' => 1,
+                    'profile_id' => null,
+                ],
+                [
+                    'address' => 'foo {{city}}',
+                    'status' => 2,
+                    'orders' => new Expression('T_upsert.orders + 1'),
+                ],
+                null,
+                [
+                    ':qp0' => 'test@example.com',
+                    ':qp1' => 'bar {{city}}',
+                    ':qp2' => 1,
+                    ':qp3' => null,
+                    ':qp4' => 'foo {{city}}',
+                    ':qp5' => 2,
+                ],
+            ],
+            'regular values without update part' => [
+                'T_upsert',
+                [
+                    'email' => 'test@example.com',
+                    'address' => 'bar {{city}}',
+                    'status' => 1,
+                    'profile_id' => null,
+                ],
+                false,
+                null,
+                [
+                    ':qp0' => 'test@example.com',
+                    ':qp1' => 'bar {{city}}',
+                    ':qp2' => 1,
+                    ':qp3' => null,
+                ],
+            ],
+            'query' => [
+                'T_upsert',
+                (new Query())
+                    ->select([
+                        'email',
+                        'status' => new Expression('2'),
+                    ])
+                    ->from('customer')
+                    ->where(['name' => 'user1'])
+                    ->limit(1),
+                true,
+                null,
+                [
+                    ':qp0' => 'user1',
+                ],
+            ],
+            'query with update part' => [
+                'T_upsert',
+                (new Query())
+                    ->select([
+                        'email',
+                        'status' => new Expression('2'),
+                    ])
+                    ->from('customer')
+                    ->where(['name' => 'user1'])
+                    ->limit(1),
+                [
+                    'address' => 'foo {{city}}',
+                    'status' => 2,
+                    'orders' => new Expression('T_upsert.orders + 1'),
+                ],
+                null,
+                [
+                    ':qp0' => 'user1',
+                    ':qp1' => 'foo {{city}}',
+                    ':qp2' => 2,
+                ],
+            ],
+            'query without update part' => [
+                'T_upsert',
+                (new Query())
+                    ->select([
+                        'email',
+                        'status' => new Expression('2'),
+                    ])
+                    ->from('customer')
+                    ->where(['name' => 'user1'])
+                    ->limit(1),
+                false,
+                null,
+                [
+                    ':qp0' => 'user1',
+                ],
+            ],
+            'values and expressions' => [
+                '{{%T_upsert}}',
+                [
+                    '{{%T_upsert}}.[[email]]' => 'dynamic@example.com',
+                    '[[ts]]' => new Expression('now()'),
+                ],
+                true,
+                null,
+                [
+                    ':qp0' => 'dynamic@example.com',
+                ],
+            ],
+            'values and expressions with update part' => [
+                '{{%T_upsert}}',
+                [
+                    '{{%T_upsert}}.[[email]]' => 'dynamic@example.com',
+                    '[[ts]]' => new Expression('now()'),
+                ],
+                [
+                    '[[orders]]' => new Expression('T_upsert.orders + 1'),
+                ],
+                null,
+                [
+                    ':qp0' => 'dynamic@example.com',
+                ],
+            ],
+            'values and expressions without update part' => [
+                '{{%T_upsert}}',
+                [
+                    '{{%T_upsert}}.[[email]]' => 'dynamic@example.com',
+                    '[[ts]]' => new Expression('now()'),
+                ],
+                false,
+                null,
+                [
+                    ':qp0' => 'dynamic@example.com',
+                ],
+            ],
+            'query, values and expressions with update part' => [
+                '{{%T_upsert}}',
+                (new Query())
+                    ->select([
+                        'email' => new Expression(':phEmail', [':phEmail' => 'dynamic@example.com']),
+                        '[[time]]' => new Expression('now()'),
+                    ]),
+                [
+                    'ts' => 0,
+                    '[[orders]]' => new Expression('T_upsert.orders + 1'),
+                ],
+                null,
+                [
+                    ':phEmail' => 'dynamic@example.com',
+                    ':qp1' => 0,
+                ],
+            ],
+            'query, values and expressions without update part' => [
+                '{{%T_upsert}}',
+                (new Query())
+                    ->select([
+                        'email' => new Expression(':phEmail', [':phEmail' => 'dynamic@example.com']),
+                        '[[time]]' => new Expression('now()'),
+                    ]),
+                [
+                    'ts' => 0,
+                    '[[orders]]' => new Expression('T_upsert.orders + 1'),
+                ],
+                null,
+                [
+                    ':phEmail' => 'dynamic@example.com',
+                    ':qp1' => 0,
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * @depends testInitFixtures
+     * @dataProvider upsertProvider
+     * @param string $table
+     * @param array $insertColumns
+     * @param array|null $updateColumns
+     * @param string|string[] $expectedSQL
+     * @param array $expectedParams
+     */
+    public function testUpsert($table, $insertColumns, $updateColumns, $expectedSQL, $expectedParams)
+    {
+        $actualParams = [];
+        $actualSQL = $this->getQueryBuilder(true, $this->driverName === 'sqlite')->upsert($table, $insertColumns, $updateColumns, $actualParams);
+        if (is_string($expectedSQL)) {
+            $this->assertSame($expectedSQL, $actualSQL);
+        } else {
+            $this->assertContains($actualSQL, $expectedSQL);
+        }
+        if (ArrayHelper::isAssociative($expectedParams)) {
+            $this->assertSame($expectedParams, $actualParams);
+        } else {
+            $this->assertIsOneOf($actualParams, $expectedParams);
+        }
+    }
 
     public function batchInsertProvider()
     {
@@ -1803,6 +2182,10 @@ abstract class QueryBuilderTest extends DatabaseTestCase
 
     /**
      * @dataProvider batchInsertProvider
+     * @param string $table
+     * @param array $columns
+     * @param array $value
+     * @param string $expected
      */
     public function testBatchInsert($table, $columns, $value, $expected)
     {
@@ -1811,16 +2194,75 @@ abstract class QueryBuilderTest extends DatabaseTestCase
         $sql = $queryBuilder->batchInsert($table, $columns, $value);
         $this->assertEquals($expected, $sql);
     }
-//
-//    public function testUpdate()
-//    {
-//        // TODO implement
-//    }
-//
-//    public function testDelete()
-//    {
-//        // TODO implement
-//    }
+
+    public function updateProvider()
+    {
+        return [
+            [
+                'customer',
+                [
+                    'status' => 1,
+                    'updated_at' => new Expression('now()'),
+                ],
+                [
+                    'id' => 100,
+                ],
+                $this->replaceQuotes('UPDATE [[customer]] SET [[status]]=:qp0, [[updated_at]]=now() WHERE [[id]]=:qp1'),
+                [
+                    ':qp0' => 1,
+                    ':qp1' => 100,
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * @dataProvider updateProvider
+     * @param string $table
+     * @param array $columns
+     * @param array|string $condition
+     * @param string $expectedSQL
+     * @param array $expectedParams
+     */
+    public function testUpdate($table, $columns, $condition, $expectedSQL, $expectedParams)
+    {
+        $actualParams = [];
+        $actualSQL = $this->getQueryBuilder()->update($table, $columns, $condition, $actualParams);
+        $this->assertSame($expectedSQL, $actualSQL);
+        $this->assertSame($expectedParams, $actualParams);
+    }
+
+    public function deleteProvider()
+    {
+        return [
+            [
+                'user',
+                [
+                    'is_enabled' => false,
+                    'power' => new Expression('WRONG_POWER()'),
+                ],
+                $this->replaceQuotes('DELETE FROM [[user]] WHERE ([[is_enabled]]=:qp0) AND ([[power]]=WRONG_POWER())'),
+                [
+                    ':qp0' => false,
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * @dataProvider deleteProvider
+     * @param string $table
+     * @param array|string $condition
+     * @param string $expectedSQL
+     * @param array $expectedParams
+     */
+    public function testDelete($table, $condition, $expectedSQL, $expectedParams)
+    {
+        $actualParams = [];
+        $actualSQL = $this->getQueryBuilder()->delete($table, $condition, $actualParams);
+        $this->assertSame($expectedSQL, $actualSQL);
+        $this->assertSame($expectedParams, $actualParams);
+    }
 
 
     public function testCommentColumn()
@@ -1877,6 +2319,12 @@ abstract class QueryBuilderTest extends DatabaseTestCase
             [['not like', 'name', [new Expression('CONCAT("test", name, "%")'), '\ab_c']], '[[name]] NOT LIKE CONCAT("test", name, "%") AND [[name]] NOT LIKE :qp0', [':qp0' => '%\\\ab\_c%']],
             [['or like', 'name', [new Expression('CONCAT("test", name, "%")'), '\ab_c']], '[[name]] LIKE CONCAT("test", name, "%") OR [[name]] LIKE :qp0', [':qp0' => '%\\\ab\_c%']],
             [['or not like', 'name', [new Expression('CONCAT("test", name, "%")'), '\ab_c']], '[[name]] NOT LIKE CONCAT("test", name, "%") OR [[name]] NOT LIKE :qp0', [':qp0' => '%\\\ab\_c%']],
+            // @see https://github.com/yiisoft/yii2/issues/15630
+            [
+                ['like', 'location.title_ru', 'vi%', false],
+                '[[location]].[[title_ru]] LIKE :qp0',
+                [':qp0' => 'vi%'],
+            ],
         ];
 
         // adjust dbms specific escaping
@@ -1892,11 +2340,15 @@ abstract class QueryBuilderTest extends DatabaseTestCase
                 $conditions[$i][2][$name] = strtr($conditions[$i][2][$name], $this->likeParameterReplacements);
             }
         }
+
         return $conditions;
     }
 
     /**
      * @dataProvider likeConditionProvider
+     * @param array $condition
+     * @param string $expected
+     * @param array $expectedParams
      */
     public function testBuildLikeCondition($condition, $expected, $expectedParams)
     {
@@ -1904,5 +2356,23 @@ abstract class QueryBuilderTest extends DatabaseTestCase
         list($sql, $params) = $this->getQueryBuilder()->build($query);
         $this->assertEquals('SELECT *' . (empty($expected) ? '' : ' WHERE ' . $this->replaceQuotes($expected)), $sql);
         $this->assertEquals($expectedParams, $params);
+    }
+
+    /**
+     * @see https://github.com/yiisoft/yii2/issues/15653
+     */
+    public function testIssue15653()
+    {
+        $query = (new Query())
+            ->from('admin_user')
+            ->where(['is_deleted' => false]);
+
+        $query
+            ->where([])
+            ->andWhere(['in', 'id', ['1', '0']]);
+
+        list($sql, $params) = $this->getQueryBuilder()->build($query);
+        $this->assertSame($this->replaceQuotes("SELECT * FROM [[admin_user]] WHERE [[id]] IN (:qp0, :qp1)"), $sql);
+        $this->assertSame([':qp0' => '1', ':qp1' => '0'], $params);
     }
 }

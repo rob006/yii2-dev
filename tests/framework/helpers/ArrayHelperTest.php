@@ -56,7 +56,7 @@ class ArrayHelperTest extends TestCase
 
     public function testToArray()
     {
-        $dataArrayable = $this->getMock('yii\\base\\Arrayable');
+        $dataArrayable = $this->getMockBuilder('yii\\base\\Arrayable')->getMock();
         $dataArrayable->method('toArray')->willReturn([]);
         $this->assertEquals([], ArrayHelper::toArray($dataArrayable));
         $this->assertEquals(['foo'], ArrayHelper::toArray('foo'));
@@ -331,6 +331,7 @@ class ArrayHelperTest extends TestCase
                 $o = ['Bug' => 'C', 'Enh' => 'D'];
                 return $o[$m[1]] . ' ' . (!empty($m[2]) ? $m[2] : 'AAAA' . $i++);
             }
+
             return 'B' . $i++;
         }, SORT_ASC, SORT_NATURAL);
         $this->assertEquals([
@@ -505,6 +506,12 @@ class ArrayHelperTest extends TestCase
         ];
 
         $this->assertEquals($expected, $result);
+    }
+
+    public function testMergeEmpty()
+    {
+        $this->assertEquals([], ArrayHelper::merge([], []));
+        $this->assertEquals([], ArrayHelper::merge([], [], []));
     }
 
     /**
@@ -802,27 +809,29 @@ class ArrayHelperTest extends TestCase
     }
 
     /**
-     * This is expected to result in a PHP error
-     * @expectedException \PHPUnit_Framework_Error
+     * This is expected to result in a PHP error.
+     * @requires PHPUnit 6.0
      */
     public function testGetValueNonexistingProperties1()
     {
+        $this->expectException('PHPUnit\Framework\Error\Notice');
         $object = new Post1();
-        $this->assertEquals(null, ArrayHelper::getValue($object, 'nonExisting'));
+        $this->assertNull(ArrayHelper::getValue($object, 'nonExisting'));
     }
 
     /**
-     * This is expected to result in a PHP error
-     * @expectedException \PHPUnit_Framework_Error
+     * This is expected to result in a PHP error.
+     * @requires PHPUnit 6.0
      */
     public function testGetValueNonexistingProperties2()
     {
+        $this->expectException('PHPUnit\Framework\Error\Notice');
         $arrayObject = new \ArrayObject(['id' => 23], \ArrayObject::ARRAY_AS_PROPS);
         $this->assertEquals(23, ArrayHelper::getValue($arrayObject, 'nonExisting'));
     }
 
     /**
-     * Data provider for [[testSetValue()]]
+     * Data provider for [[testSetValue()]].
      * @return array test data
      */
     public function dataProviderSetValue()
@@ -1260,5 +1269,15 @@ class ArrayHelperTest extends TestCase
         $this->assertEquals(ArrayHelper::filter($array, ['X']), []);
         $this->assertEquals(ArrayHelper::filter($array, ['X.Y']), []);
         $this->assertEquals(ArrayHelper::filter($array, ['A.X']), []);
+
+        $tmp = [
+            'a' => 0,
+            'b' => '',
+            'c' => false,
+            'd' => null,
+            'e' => true,
+        ];
+
+        $this->assertEquals(ArrayHelper::filter($tmp, array_keys($tmp)), $tmp);
     }
 }

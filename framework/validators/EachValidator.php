@@ -77,7 +77,7 @@ class EachValidator extends Validator
 
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function init()
     {
@@ -97,6 +97,7 @@ class EachValidator extends Validator
         if ($this->_validator === null) {
             $this->_validator = $this->createEmbeddedValidator($model);
         }
+
         return $this->_validator;
     }
 
@@ -115,6 +116,7 @@ class EachValidator extends Validator
             if (!is_object($model)) {
                 $model = new Model(); // mock up context model
             }
+
             return Validator::createValidator($rule[0], $model, $this->attributes, array_slice($rule, 1));
         }
 
@@ -122,12 +124,12 @@ class EachValidator extends Validator
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function validateAttribute($model, $attribute)
     {
         $value = $model->$attribute;
-        if (!is_array($value)) {
+        if (!is_array($value) && !$value instanceof \ArrayAccess) {
             $this->addError($model, $attribute, $this->message, []);
             return;
         }
@@ -166,11 +168,11 @@ class EachValidator extends Validator
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     protected function validateValue($value)
     {
-        if (!is_array($value)) {
+        if (!is_array($value) && !$value instanceof \ArrayAccess) {
             return [$this->message, []];
         }
 

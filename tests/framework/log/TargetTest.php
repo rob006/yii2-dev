@@ -22,17 +22,17 @@ class TargetTest extends TestCase
     public function filters()
     {
         return [
-            [[], ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']],
+            [[], ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I']],
 
-            [['levels' => 0], ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']],
+            [['levels' => 0], ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I']],
             [
                 ['levels' => Logger::LEVEL_INFO | Logger::LEVEL_WARNING | Logger::LEVEL_ERROR | Logger::LEVEL_TRACE],
-                ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'],
+                ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'],
             ],
-            [['levels' => ['error']], ['B', 'G', 'H']],
-            [['levels' => Logger::LEVEL_ERROR], ['B', 'G', 'H']],
-            [['levels' => ['error', 'warning']], ['B', 'C', 'G', 'H']],
-            [['levels' => Logger::LEVEL_ERROR | Logger::LEVEL_WARNING], ['B', 'C', 'G', 'H']],
+            [['levels' => ['error']], ['B', 'G', 'H', 'I']],
+            [['levels' => Logger::LEVEL_ERROR], ['B', 'G', 'H', 'I']],
+            [['levels' => ['error', 'warning']], ['B', 'C', 'G', 'H', 'I']],
+            [['levels' => Logger::LEVEL_ERROR | Logger::LEVEL_WARNING], ['B', 'C', 'G', 'H', 'I']],
 
             [['categories' => ['application']], ['A', 'B', 'C', 'D', 'E']],
             [['categories' => ['application*']], ['A', 'B', 'C', 'D', 'E', 'F']],
@@ -41,7 +41,9 @@ class TargetTest extends TestCase
             [['categories' => ['application.components.Test']], ['F']],
             [['categories' => ['application.components.*']], ['F']],
             [['categories' => ['application.*', 'yii.db.*']], ['F', 'G', 'H']],
-            [['categories' => ['application.*', 'yii.db.*'], 'except' => ['yii.db.Command.*']], ['F', 'G']],
+            [['categories' => ['application.*', 'yii.db.*'], 'except' => ['yii.db.Command.*', 'yii\db\*']], ['F', 'G']],
+            [['except' => ['yii\db\*']], ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']],
+            [['categories' => ['yii*'], 'except' => ['yii\db\*']], ['G', 'H']],
 
             [['categories' => ['application', 'yii.db.*'], 'levels' => Logger::LEVEL_ERROR], ['B', 'G', 'H']],
             [['categories' => ['application'], 'levels' => Logger::LEVEL_ERROR], ['B']],
@@ -51,6 +53,8 @@ class TargetTest extends TestCase
 
     /**
      * @dataProvider filters
+     * @param array $filter
+     * @param array $expected
      */
     public function testFilter($filter, $expected)
     {
@@ -70,8 +74,9 @@ class TargetTest extends TestCase
         $logger->log('testF', Logger::LEVEL_INFO, 'application.components.Test');
         $logger->log('testG', Logger::LEVEL_ERROR, 'yii.db.Command');
         $logger->log('testH', Logger::LEVEL_ERROR, 'yii.db.Command.whatever');
+        $logger->log('testI', Logger::LEVEL_ERROR, 'yii\db\Command::query');
 
-        $this->assertEquals(count($expected), count(static::$messages));
+        $this->assertEquals(count($expected), count(static::$messages), 'Expected ' . implode(',', $expected) . ', got ' . implode(',', array_column(static::$messages, 0)));
         $i = 0;
         foreach ($expected as $e) {
             $this->assertEquals('test' . $e, static::$messages[$i++][0]);
@@ -163,6 +168,50 @@ class TargetTest extends TestCase
         $this->expectExceptionMessage('Incorrect 128 value');
         $target->setLevels(128);
     }
+
+    public function testGetEnabled()
+    {
+        /** @var Target $target */
+        $target = $this->getMockForAbstractClass('yii\\log\\Target');
+
+        $target->enabled = true;
+        $this->assertTrue($target->enabled);
+
+        $target->enabled = false;
+        $this->assertFalse($target->enabled);
+
+        $target->enabled = function ($target) {
+            return empty($target->messages);
+        };
+        $this->assertTrue($target->enabled);
+    }
+
+    public function testFormatMessage()
+    {
+        /** @var Target $target */
+        $target = $this->getMockForAbstractClass('yii\\log\\Target');
+
+        $text = 'message';
+        $level = Logger::LEVEL_INFO;
+        $category = 'application';
+        $timestamp = 1508160390.6083;
+
+        $expectedWithoutMicro = '2017-10-16 13:26:30 [info][application] message';
+        $formatted = $target->formatMessage([$text, $level, $category, $timestamp]);
+        $this->assertSame($expectedWithoutMicro, $formatted);
+
+        $target->microtime = true;
+
+        $expectedWithMicro = '2017-10-16 13:26:30.6083 [info][application] message';
+        $formatted = $target->formatMessage([$text, $level, $category, $timestamp]);
+        $this->assertSame($expectedWithMicro, $formatted);
+
+        $timestamp = 1508160390;
+
+        $expectedWithoutMicro = '2017-10-16 13:26:30 [info][application] message';
+        $formatted = $target->formatMessage([$text, $level, $category, $timestamp]);
+        $this->assertSame($expectedWithoutMicro, $formatted);
+    }
 }
 
 class TestTarget extends Target
@@ -180,7 +229,7 @@ class TestTarget extends Target
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function getContextMessage()
     {
